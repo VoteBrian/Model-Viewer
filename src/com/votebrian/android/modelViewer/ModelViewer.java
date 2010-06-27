@@ -2,10 +2,14 @@ package com.votebrian.android.modelViewer;
 
 import android.app.Activity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Window;
 import android.view.WindowManager;
 
 public class ModelViewer extends Activity {
+	//Tag for log messages
+	private static final String TAG = "ModelViewer";
+	
 	//Global variables
 	ModelView modelView;
 	
@@ -24,5 +28,7 @@ public class ModelViewer extends Activity {
         
         //Set the content view
         setContentView(modelView);
+        
+        Log.i(TAG, "Start");
     }
 }
