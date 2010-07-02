@@ -24,8 +24,8 @@ public class ModelRenderer implements GLSurfaceView.Renderer {
 	static	float nearZ		= 0.01f;
 			float farH		= 0f;
 			float farW		= 0f;
-	static	float farZ		= 40f;
-			float viewAngle	= 25f;
+	static	float farZ		= 20f;
+			float viewAngle	= 5f;
 			float floorZ	= 10f;
 			
 			float rotAngleX	= 0f;
@@ -37,9 +37,9 @@ public class ModelRenderer implements GLSurfaceView.Renderer {
 		gl.glClearColor(0.8f, 0f, 0f, 1f);
 		
 		//Only draw front facing triangles
-//		gl.glEnable(GL10.GL_CULL_FACE);
-//		gl.glFrontFace(GL10.GL_CCW);
-//		gl.glCullFace(GL10.GL_BACK);
+		gl.glEnable(GL10.GL_CULL_FACE);
+		gl.glFrontFace(GL10.GL_CW);
+		gl.glCullFace(GL10.GL_BACK);
 		
 		//no idea
 		gl.glEnable(GL10.GL_ALPHA_TEST);
@@ -87,7 +87,7 @@ public class ModelRenderer implements GLSurfaceView.Renderer {
 		FloatBuffer vertexBuffer = model.vertexBuffer;
 		FloatBuffer colorBuffer = model.colorBuffer;
 		ShortBuffer triBuffer = model.triBuffer;
-		int numTriIndices = model.numTriIndices;
+		int numTriIndices = model.numTriangles;
 		
 		gl.glMatrixMode(GL10.GL_MODELVIEW);
 		gl.glTranslatef(0f, 0f, -1*floorZ);
@@ -99,18 +99,29 @@ public class ModelRenderer implements GLSurfaceView.Renderer {
 	}
 	
 	private void setLighting(GL10 gl) {
-		float lightAmbient[] = new float[] { 0.2f, 0.3f, 0.6f, 0.9f };
-		float lightDiffuse[] = new float[] { 0.9f, 0.9f, 0.7f, 0.9f };
-		float[] lightPos = new float[] {5,5,3,1};
+		float lightAmbient0[]	= new float[] { 0.3f, 0.3f, 0.3f, 1f };
+		float lightDiffuse0[]	= new float[] { 0.7f, 0.7f, 0.7f, 1f };
+		float specular0[]		= new float[] { 1.0f, 1.0f, 1.0f, 1f };
+		float specref[]			= new float[] { 1.0f, 1.0f, 1.0f, 1f };
+		float[] lightPos0 = new float[] {5,5,3,1};
 
-		gl.glMatrixMode(GL10.GL_TEXTURE);
 		gl.glEnable(GL10.GL_COLOR_MATERIAL);
-		gl.glEnable(GL10.GL_LIGHTING);
-		gl.glEnable(GL10.GL_LIGHT0);
+//		gl.glEnable(GL10.GL_LIGHTING);
+//		gl.glEnable(GL10.GL_LIGHT0);
 
-		gl.glLightfv(GL10.GL_LIGHT0, GL10.GL_AMBIENT, lightAmbient,	0);
-		gl.glLightfv(GL10.GL_LIGHT0, GL10.GL_DIFFUSE, lightDiffuse,	0);
-		gl.glLightfv(GL10.GL_LIGHT0, GL10.GL_POSITION, lightPos, 0);
+//		gl.glLightfv(GL10.GL_LIGHT0, GL10.GL_AMBIENT, lightAmbient0, 0);
+//		gl.glLightfv(GL10.GL_LIGHT0, GL10.GL_DIFFUSE, lightDiffuse0, 0);
+//		gl.glLightfv(GL10.GL_LIGHT0, GL10.GL_POSITION, lightPos0, 0);
+
+//		gl.glEnable(GL10.GL_DEPTH_TEST);
+		gl.glDepthFunc(GL10.GL_LEQUAL);
+		
+//		gl.glEnable(GL10.GL_CULL_FACE);
+		gl.glShadeModel(GL10.GL_SMOOTH);
+		
+		gl.glClearDepthf(1.0f);
+
+//		gl.glLightfv(GL10.GL_LIGHT0, GL10.GL_POSITION, lightPos0, 0);
 	}
 	
 	private void projSettings(GL10 gl) {

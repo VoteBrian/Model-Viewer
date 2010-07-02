@@ -27,7 +27,7 @@ public class ModelView extends GLSurfaceView{
 	
 	public boolean onTouchEvent(final MotionEvent event) {		
 		queueEvent(new Runnable() {
-			public void run() {
+			public void run() {				
 				float x = event.getX();
 				float y = event.getY();
 				
@@ -48,10 +48,11 @@ public class ModelView extends GLSurfaceView{
 					startY = y;
 					break;
 				}
-				
 			}
 		});
 		return true;
 	}
+	
+	
 
 }

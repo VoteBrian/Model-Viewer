@@ -1,11 +1,19 @@
 package com.votebrian.android.modelViewer;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 import java.nio.ShortBuffer;
 
+import android.os.Environment;
+
 public class Model {
+	public String filename = "models/standard.off";
+	public File sdcard;
 	public FloatBuffer	vertexBuffer;
 	public FloatBuffer	colorBuffer;
 	public ShortBuffer	triBuffer;
@@ -14,56 +22,104 @@ public class Model {
 	float centY;
 	float centZ;
 	
-	float coords[] = {
-			0.391519f, 1.656085f, 0.933089f,
-			1.410105f, 2.165212f, 1.222124f,
-			1.639830f, 0.986414f, 0.624488f,
-			0.240742f, 0.609021f, 0.583073f,
-			0.026846f, 0.583785f, -0.323777f,
-			-0.018535f, 0.583785f, -0.323777f,
-			-0.232430f, 0.609021f, 0.583073f,
-			-1.631519f, 0.986414f, 0.624488f,
-			-1.401794f, 2.165212f, 1.222124f,
-			-0.383207f, 1.656085f, 0.933090f,
-			0.003756f, -2.377761f, -0.548851f,
-			0.003755f, 1.622239f, -0.548851f
-	};
-	int numVertices = coords.length;
+	float[] coords;
+	int numVertices;;
 	
-	short[] triIndices = {
-			11, 0, 10,
-			10, 0, 2,
-			1, 2, 0,
-			2, 3, 10,
-			3, 4, 10,
-			6, 5, 10,
-			7, 6, 10,
-			8, 7, 9,
-			9, 7, 10,
-			9, 10, 11
-	};
-	public int numTriIndices = triIndices.length;
+	short[] triangles;
+	public int numTriangles;
 	
-	float[] colors = {
-        0.5f, 0.5f, 0.5f, 1f,
-        0.5f, 0.5f, 0.5f, 1f,
-        0.5f, 0.5f, 0.5f, 1f,
-        0.5f, 0.5f, 0.5f, 1f,
-        0.5f, 0.5f, 0.5f, 1f,
-        0.5f, 0.5f, 0.5f, 1f,
-        0.5f, 0.5f, 0.5f, 1f,
-        0.5f, 0.5f, 0.5f, 1f,
-        0.5f, 0.5f, 0.5f, 1f,
-        0.5f, 0.5f, 0.5f, 1f,
-        0.5f, 0.5f, 0.5f, 1f,
-        0.5f, 0.5f, 0.5f, 1f
-	};
-	public int numColors = colors.length;
+	float[] colors;
+	public int numColors;
 	
 	public Model(float x, float y, float z) {
+		String line;
+		String value;
+		String remainder;
+		String remainderZ;
+		
+		BufferedReader reader;
+		
+		int lineLength	= 0;
+		int index		= 0;
+		int vertices	= 0;
+		int indices		= 0;
+		
+		float vertX		= 0f;
+		float vertY		= 0f;
+		float vertZ		= 0f;
+		
+		final int FILETYPE	= 0;
+		final int LENGTHS	= 1;
+		final int VERTICES	= 2;
+		final int INDICES	= 3;
+		final int DONE		= 4;
+			  int type		= FILETYPE;
+			  
 		centX = x;
 		centY = y;
 		centZ = z;
+		
+		//build the default filename
+		sdcard = Environment.getExternalStorageDirectory();
+		File file = new File(sdcard, filename);
+		
+		//establish the reader
+		try {
+			reader = new BufferedReader(new FileReader(file));
+			
+			while((line = reader.readLine()) != null) {
+				if(type == FILETYPE) {
+					//the first line should just be "OFF\n"
+					//ignore that line
+					type = LENGTHS;
+				} else if(type == LENGTHS) {
+					//record the values for number of vertices and indices
+					lineLength = line.length();
+					
+					index = line.indexOf(" ");
+					value = line.substring(0, index-1);
+					numVertices = vertices = Integer.parseInt(value);
+					
+					remainder = line.substring(index+1,lineLength);
+					index = remainder.indexOf(" ");
+					value = line.substring(0, index-1);
+					numTriangles = indices = Integer.parseInt(value);
+					
+					type = VERTICES;
+				} else if(type == VERTICES) {
+					//store vertices values
+					lineLength = line.length();
+					
+					index = line.indexOf(" ");
+					vertX = Float.parseFloat( line.substring(0, index-1) );
+					
+					remainder = line.substring(index+1, lineLength);
+					index = remainder.indexOf(" ");
+					vertY = Float.parseFloat( remainder.substring(0, index-1) );
+					
+					remainderZ = remainder.substring(index+1, lineLength);
+					index = remainderZ.indexOf("/n");
+					vertZ = Float.parseFloat( remainderZ.substring(0, index-1) );
+					
+					coords[numVertices*3 - vertices*3] = vertX;
+					coords[numVertices*3 - vertices*3 + 1] = vertY;
+					coords[numVertices*3 - vertices*3 + 2] = vertZ;
+					
+					if(vertices == 1) {
+						type = INDICES;
+					}
+					
+					vertices -= 1;
+				} else if(type == INDICES)	{
+					//store indices values
+					type = DONE;
+				}
+			}
+		}
+		catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+		}
 		
 		BuildBuffers();
 	}
@@ -77,7 +133,7 @@ public class Model {
 		
 		//allocate memory for the index buffer
 		//number of indices * 2 bytes per short
-		ByteBuffer fbb = ByteBuffer.allocateDirect(numTriIndices*2);
+		ByteBuffer fbb = ByteBuffer.allocateDirect(numTriangles*2);
 		fbb.order(ByteOrder.nativeOrder());
 		triBuffer = fbb.asShortBuffer();
 		
@@ -88,7 +144,7 @@ public class Model {
 	    colorBuffer = cbb.asFloatBuffer();
 
 		vertexBuffer.put(coords);
-		triBuffer.put(triIndices);
+		triBuffer.put(triangles);
 		colorBuffer.put(colors);
 		
 		vertexBuffer.position(0);
