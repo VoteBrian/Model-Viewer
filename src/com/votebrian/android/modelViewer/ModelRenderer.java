@@ -25,21 +25,20 @@ public class ModelRenderer implements GLSurfaceView.Renderer {
 			float farH		= 0f;
 			float farW		= 0f;
 	static	float farZ		= 20f;
-			float viewAngle	= 5f;
+			float viewAngle	= 20f;
 			float floorZ	= 10f;
 			
 			float rotAngleX	= 0f;
 			float rotAngleY	= 0f;
 
-	@Override
 	public void onSurfaceCreated(GL10 gl, EGLConfig config) {
 		//Set the background color to red
 		gl.glClearColor(0.8f, 0f, 0f, 1f);
 		
 		//Only draw front facing triangles
-		gl.glEnable(GL10.GL_CULL_FACE);
-		gl.glFrontFace(GL10.GL_CW);
-		gl.glCullFace(GL10.GL_BACK);
+		//gl.glEnable(GL10.GL_CULL_FACE);
+		//gl.glFrontFace(GL10.GL_CCW);
+		//gl.glCullFace(GL10.GL_BACK);
 		
 		//no idea
 		gl.glEnable(GL10.GL_ALPHA_TEST);
@@ -53,7 +52,6 @@ public class ModelRenderer implements GLSurfaceView.Renderer {
 		bg = new Background();
 	}
 
-	@Override
 	public void onSurfaceChanged(GL10 gl, int w, int h) {
 		viewW = w;
 		viewH = h;
@@ -61,7 +59,6 @@ public class ModelRenderer implements GLSurfaceView.Renderer {
 		projSettings(gl);
 	}
 
-	@Override
 	public void onDrawFrame(GL10 gl) {
 		//clear the color buffer to show the Clear Color
 		gl.glClear(GL10.GL_COLOR_BUFFER_BIT | GL10.GL_DEPTH_BUFFER_BIT);
@@ -82,12 +79,11 @@ public class ModelRenderer implements GLSurfaceView.Renderer {
 		gl.glColorPointer(4, GL10.GL_FLOAT, 0, bgColorBuffer);
 		gl.glDrawElements(GL10.GL_TRIANGLES, bgNumTriIndices, GL10.GL_UNSIGNED_SHORT, bgTriBuffer);
 		
-		
 		//Draw the model
 		FloatBuffer vertexBuffer = model.vertexBuffer;
 		FloatBuffer colorBuffer = model.colorBuffer;
 		ShortBuffer triBuffer = model.triBuffer;
-		int numTriIndices = model.numTriangles;
+		int numTriIndices = model.numTriangles * 3;
 		
 		gl.glMatrixMode(GL10.GL_MODELVIEW);
 		gl.glTranslatef(0f, 0f, -1*floorZ);
