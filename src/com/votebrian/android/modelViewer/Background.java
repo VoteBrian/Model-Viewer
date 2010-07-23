@@ -5,6 +5,8 @@ import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 import java.nio.ShortBuffer;
 
+import javax.microedition.khronos.opengles.GL10;
+
 import android.util.Log;
 
 public class Background {
@@ -32,8 +34,8 @@ public class Background {
 	
 	float[] colors = {
 	        0.6f, 0.6f, 0.8f, 1f,
-	        1f, 1f, 1f, 1f,
-	        1f, 1f, 1f, 1f,
+	        1.0f, 1.0f, 1.0f, 1f,
+	        1.0f, 1.0f, 1.0f, 1f,
 	        0.6f, 0.6f, 0.8f, 1f
 	};
 	public int numColors = colors.length;
@@ -90,5 +92,14 @@ public class Background {
 		vertexBuffer.position(0);
 		triBuffer.position(0);
 		colorBuffer.position(0);
+	}
+	
+	public void draw(GL10 gl) {
+		gl.glMatrixMode(GL10.GL_MODELVIEW);
+		gl.glVertexPointer(3, GL10.GL_FLOAT, 0, vertexBuffer);
+//		gl.glColorPointer(4, GL10.GL_FLOAT, 0,  colorBuffer);
+		gl.glColor4f(0.0f, 0.0f, 0.0f, 1.0f);
+		gl.glDrawElements(GL10.GL_TRIANGLES, numTriIndices, GL10.GL_UNSIGNED_SHORT, triBuffer);
+//		gl.glEnableClientState(GL10.GL_COLOR_ARRAY);
 	}
 }

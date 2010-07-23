@@ -1,13 +1,18 @@
 package com.votebrian.android.modelViewer;
 
+import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 import java.nio.ShortBuffer;
 
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
+import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.opengl.GLSurfaceView;
 import android.util.Log;
+import android.widget.ImageView;
 
 public class ModelRenderer implements GLSurfaceView.Renderer {
 	//Tag for log messages
@@ -30,9 +35,15 @@ public class ModelRenderer implements GLSurfaceView.Renderer {
 			
 			float rotAngleX	= 0f;
 			float rotAngleY	= 0f;
+			
+	Context 	  context;
+			
+	public ModelRenderer(Context c){
+		context = c;
+	}
 
 	public void onSurfaceCreated(GL10 gl, EGLConfig config) {
-		//Set the background color to red
+		//Set the background color to pink
 		gl.glClearColor(0.8f, 0f, 0f, 1f);
 		
 		//Only draw front facing triangles
@@ -60,7 +71,11 @@ public class ModelRenderer implements GLSurfaceView.Renderer {
 	}
 
 	public void onDrawFrame(GL10 gl) {
+		Bitmap bmp = BitmapFactory.decodeResource(context.getResources(), R.drawable.tiletex);
+		ByteBuffer bb = ByteBuffer.allocateDirect(bmp.getHeight() * bmp.getWidth() * 4); 
+		
 		//clear the color buffer to show the Clear Color
+		gl.glEnable(GL10.GL_TEXTURE_2D);
 		gl.glClear(GL10.GL_COLOR_BUFFER_BIT | GL10.GL_DEPTH_BUFFER_BIT);
 		
 		//reset the matrix
@@ -83,7 +98,13 @@ public class ModelRenderer implements GLSurfaceView.Renderer {
 		FloatBuffer vertexBuffer = model.vertexBuffer;
 		FloatBuffer colorBuffer = model.colorBuffer;
 		ShortBuffer triBuffer = model.triBuffer;
+		FloatBuffer texBuffer = model.texBuffer;
 		int numTriIndices = model.numTriangles * 3;
+		
+		//load texture
+		gl.glTexCoordPointer(2, GL10.GL_FLAT, 0, texBuffer);
+		
+		gl.glTexImage2D(GL10.GL_TEXTURE_2D, 0, GL10.GL_LUMINANCE, 256, 256, 0, GL10.GL_LUMINANCE, GL10.GL_UNSIGNED_BYTE, bb);
 		
 		gl.glMatrixMode(GL10.GL_MODELVIEW);
 		gl.glTranslatef(0f, 0f, -1*floorZ);

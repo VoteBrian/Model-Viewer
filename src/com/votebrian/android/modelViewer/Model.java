@@ -12,6 +12,8 @@ import java.nio.FloatBuffer;
 import java.nio.ShortBuffer;
 import java.util.Arrays;
 
+import javax.microedition.khronos.opengles.GL10;
+
 import android.os.Environment;
 
 public class Model {
@@ -19,11 +21,15 @@ public class Model {
 	public File sdcard;
 	public FloatBuffer	vertexBuffer;
 	public FloatBuffer	colorBuffer;
+	public FloatBuffer	texBuffer;
 	public ShortBuffer	triBuffer;
 	
 	float centX;
 	float centY;
 	float centZ;
+	
+	float rotAngleX;
+	float rotAngleY;
 	
 	float[] coords;
 	int numVertices;;
@@ -33,6 +39,24 @@ public class Model {
 	
 	float[] colors;
 	public int numColors;
+	
+	float[] texture = {
+			0.750000f, 0.750000f,
+			0.500000f, 0.750000f,
+			0.500000f, 0.500000f,
+			0.750000f, 0.500000f,
+			0.250000f, 0.500000f,
+			0.250000f, 0.250000f,
+			0.500000f, 0.250000f,
+			0.250000f, 0.750000f,
+			0.000000f, 0.750000f,
+			0.000000f, 0.500000f,
+			0.500000f, 1.000000f,
+			0.250000f, 1.000000f,
+			0.500000f, 0.000000f,
+			0.250000f, 0.000000f
+	};
+	public int numTex;
 	
 	public Model(float x, float y, float z) {
 		String line;
@@ -170,6 +194,13 @@ public class Model {
 		
 		Arrays.fill(colors, 0.8f);
 		
+//		//color the model
+//		for(int a = 0; a < colors.length; a++) {
+//			if(a%4 == 0) {
+//				colors[a] = 1.0f;
+//			}
+//		};
+		
 		BuildBuffers();
 	}
 	
@@ -191,6 +222,10 @@ public class Model {
 	    ByteBuffer cbb = ByteBuffer.allocateDirect(numVertices*4*4);
 	    cbb.order(ByteOrder.nativeOrder());
 	    colorBuffer = cbb.asFloatBuffer();
+	    
+	    ByteBuffer tbb = ByteBuffer.allocateDirect(numTex*4);
+	    tbb.order(ByteOrder.nativeOrder());
+	    texBuffer = tbb.asFloatBuffer();
 
 		vertexBuffer.put(coords);
 		triBuffer.put(triangles);
@@ -199,5 +234,27 @@ public class Model {
 		vertexBuffer.position(0);
 		triBuffer.position(0);
 		colorBuffer.position(0);
+	}
+	
+	public void draw(GL10 gl) {
+		//stuff
+		gl.glMatrixMode(GL10.GL_MODELVIEW);
+		gl.glTranslatef(0f, 0f, -10f);
+		gl.glRotatef(rotAngleX, 0f, 1f, 0f);
+		gl.glRotatef(rotAngleY, 1f, 0f, 0f);
+		gl.glVertexPointer(3, GL10.GL_FLOAT, 0, vertexBuffer);
+		gl.glColor4f(0.8f, 0.8f, 0.8f, 1.0f);
+//		gl.glColorPointer(4, GL10.GL_FLOAT, 0, colorBuffer);
+		gl.glDrawElements(GL10.GL_TRIANGLES, numTriangles*3, GL10.GL_UNSIGNED_SHORT, triBuffer);
+	}
+	
+
+	
+	public void setAngleX(float angle) {
+		rotAngleX += angle;
+	}
+	
+	public void setAngleY(float angle) {
+		rotAngleY += angle;
 	}
 }
