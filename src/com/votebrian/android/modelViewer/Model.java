@@ -32,37 +32,24 @@ public class Model {
 	float rotAngleY;
 	
 	float[] coords;
-	int numVertices;;
+	int numVertices;
 	
-	short[] triangles;
-	public int numTriangles;
+	float[] texture;
+	int numTex;
 	
-	float[] colors;
-	public int numColors;
+	float[] normals;
+	int numNormals;
 	
-	float[] texture = {
-			0.750000f, 0.750000f,
-			0.500000f, 0.750000f,
-			0.500000f, 0.500000f,
-			0.750000f, 0.500000f,
-			0.250000f, 0.500000f,
-			0.250000f, 0.250000f,
-			0.500000f, 0.250000f,
-			0.250000f, 0.750000f,
-			0.000000f, 0.750000f,
-			0.000000f, 0.500000f,
-			0.500000f, 1.000000f,
-			0.250000f, 1.000000f,
-			0.500000f, 0.000000f,
-			0.250000f, 0.000000f
-	};
-	public int numTex;
+	short[] indices;
+	int numIndices;
 	
 	public Model(float x, float y, float z) {
 		String line;
 		String value;
 		String remainder;
 		String remainderZ;
+		String firstTwo;
+		String texFileName;
 		
 		BufferedReader reader;
 		FileInputStream fileIS;
@@ -70,11 +57,19 @@ public class Model {
 		int lineLength	= 0;
 		int index		= 0;
 		int vertices	= 0;
-		int indices		= 0;
+		
+		int coordInd	= 0;
+		int textureInd	= 0;
+		int normalInd	= 0;
+		int indicesInd	= 0;
 		
 		float vertX		= 0f;
 		float vertY		= 0f;
 		float vertZ		= 0f;
+		
+		float tempX		= 0f;
+		float tempY		= 0f;
+		float tempZ		= 0f;
 		
 		short ind1		= 0;
 		short ind2		= 0;
@@ -102,13 +97,130 @@ public class Model {
 			e1.printStackTrace();
 		}
 		
-		//establish the reader
+		//read the file
 		try {
 			reader = new BufferedReader(new FileReader(file));
 			
+			//TODO	read through file once and take down length of arrays
+			//		vertices = new float[numVertices * 3];
+			
 			while((line = reader.readLine()) != null) {
+				//number of characters in string
+				lineLength = line.length();
+				
+				//check the first two characters to determine what to do 
+				firstTwo = line.substring(0,1);
+				
+				if(firstTwo == "mt") {			//mtllib
+					//ignore
+				}else if(firstTwo == "v ") {	//vertices coordinates
+					////get rid of prefix
+					index = line.indexOf(" ");
+					remainder = line.substring(index+1, lineLength);
+					line = remainder;
+					lineLength = line.length();
+					
+					//store x coordinate
+					index = line.indexOf(" ");
+					value = line.substring(0, index);
+					if(coordInd != 0) {
+						coordInd++;
+					}
+					coords[coordInd] = Float.parseFloat(value);
+					remainder = line.substring(index+1, lineLength);
+					line = remainder;
+					lineLength = line.length();
+					
+					//store y coordinate
+					index = line.indexOf(" ");
+					value = line.substring(0, index);
+					coordInd++;
+					coords[coordInd] = Float.parseFloat(value);
+					
+					//store z coordinate
+					value = line.substring(index+1, lineLength);
+					coordInd++;
+					coords[coordInd] = Float.parseFloat(value);
+				}else if(firstTwo == "vt") {	//texture coordinates
+					//get rid of prefix
+					index = line.indexOf(" ");
+					remainder = line.substring(index+1, lineLength);
+					line = remainder;
+					lineLength = line.length();
+					
+					//store u coordinate
+					index = line.indexOf(" ");
+					value = line.substring(0, index);
+					if(textureInd != 0) {
+						textureInd++;
+					}
+					texture[textureInd] = Float.parseFloat(value);
+					
+					//store v coordinate
+					value = line.substring(index+1, lineLength);
+					textureInd++;
+					texture[textureInd] = Float.parseFloat(value);
+				}else if(firstTwo == "vn") {	//vector normals
+					//get rid of prefix
+					index = line.indexOf(" ");
+					remainder = line.substring(index+1, lineLength);
+					line = remainder;
+					lineLength = line.length();
+					
+					//store x coordinate
+					index = line.indexOf(" ");
+					value = line.substring(0, index);
+					if(normalInd != 0) {
+						normalInd++;
+					}
+					normals[normalInd] = Float.parseFloat(value);
+					remainder = line.substring(index+1, lineLength);
+					line = remainder;
+					lineLength = line.length();
+					
+					//store y coordinate
+					index = line.indexOf(" ");
+					value = line.substring(0, index);
+					normalInd++;
+					normals[normalInd] = Float.parseFloat(value);
+					
+					//store z coordinate
+					value = line.substring(index+1, lineLength);
+					normalInd++;
+					normals[normalInd] = Float.parseFloat(value);
+				}else if(firstTwo == "us") {	//usemtl (filename of the texture to use)
+					//get rid of prefix
+					index = line.indexOf(" ");
+					remainder = line.substring(index+1, lineLength);
+					texFileName = remainder;
+				}else if(firstTwo == "s ") {	//shading
+					//ignore
+				}else if(firstTwo == "f ") {	//face definitions  (vertex/texture-coordinate/normal)
+					//get rid of prefix
+					index = line.indexOf(" ");
+					remainder = line.substring(index+1, lineLength);
+					line = remainder;
+					lineLength = line.length();
+					
+					//store index 1
+					index = line.indexOf(" ");
+					value = line.substring(0, index);
+					if(indicesInd != 0) {
+						indicesInd++;
+					}
+					indices[indicesInd] = Short.parseShort(value);
+					remainder = line.substring(index+1, lineLength);
+					line = remainder;
+					lineLength = line.length();
+					
+					//TODO finish this shit...
+				}else {
+					//ignore
+				}
+				
+				/*
 				if(type == FILETYPE) {
-					//the first line should just be "OFF\n"
+					//the first line should just list the program
 					//ignore that line
 					type = LENGTHS;
 				} else if(type == LENGTHS) {
@@ -184,7 +296,7 @@ public class Model {
 					}
 					
 					indices -= 1;
-				}
+				}*/
 			}
 		}
 		catch (IOException e) {
@@ -192,7 +304,7 @@ public class Model {
 				e.printStackTrace();
 		}
 		
-		Arrays.fill(colors, 0.8f);
+//		Arrays.fill(colors, 0.8f);
 		
 //		//color the model
 //		for(int a = 0; a < colors.length; a++) {
