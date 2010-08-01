@@ -81,6 +81,10 @@ public class ModelRenderer implements GLSurfaceView.Renderer {
 		//reset the matrix
 		gl.glLoadIdentity();
 		
+//		bg.draw(gl);
+//		model.draw(gl);
+		
+		/*
 		//Draw the background
 		Log.i(TAG, "width: " + farW);
 		bg.updateSize(farW, farH, -1*(20-1));
@@ -97,7 +101,7 @@ public class ModelRenderer implements GLSurfaceView.Renderer {
 		//Draw the model
 		FloatBuffer vertexBuffer = model.vertexBuffer;
 		FloatBuffer colorBuffer = model.colorBuffer;
-		ShortBuffer triBuffer = model.triBuffer;
+		ShortBuffer triBuffer = model.indexBuffer;
 		FloatBuffer texBuffer = model.texBuffer;
 		int numTriIndices = model.numTriangles * 3;
 		
@@ -113,6 +117,7 @@ public class ModelRenderer implements GLSurfaceView.Renderer {
 		gl.glVertexPointer(3, GL10.GL_FLOAT, 0, vertexBuffer);
 		gl.glColorPointer(4, GL10.GL_FLOAT, 0, colorBuffer);
 		gl.glDrawElements(GL10.GL_TRIANGLES, numTriIndices, GL10.GL_UNSIGNED_SHORT, triBuffer);
+		*/
 	}
 	
 	private void setLighting(GL10 gl) {

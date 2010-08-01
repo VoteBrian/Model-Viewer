@@ -10,19 +10,18 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 import java.nio.ShortBuffer;
-import java.util.Arrays;
 
 import javax.microedition.khronos.opengles.GL10;
 
 import android.os.Environment;
 
 public class Model {
-	public String filename = "models/standard.off";
-	public File sdcard;
-	public FloatBuffer	vertexBuffer;
-	public FloatBuffer	colorBuffer;
-	public FloatBuffer	texBuffer;
-	public ShortBuffer	triBuffer;
+	String filename = "models/tile.obj";
+	File sdcard;
+	FloatBuffer	vertexBuffer;
+	FloatBuffer	colorBuffer;
+	FloatBuffer	texBuffer;
+	ShortBuffer	indexBuffer;
 	
 	float centX;
 	float centY;
@@ -31,64 +30,30 @@ public class Model {
 	float rotAngleX;
 	float rotAngleY;
 	
-	float[] coords;
-	int numVertices;
+	float[] vertices;
+	int numVertices = 0;
 	
 	float[] texture;
-	int numTex;
+	int numTex = 0;
 	
 	float[] normals;
-	int numNormals;
+	int numNormals = 0;
 	
 	short[] indices;
-	int numIndices;
+	int numIndices = 0;
 	
 	public Model(float x, float y, float z) {
-		String line;
-		String value;
-		String remainder;
-		String remainderZ;
-		String firstTwo;
-		String texFileName;
-		
-		BufferedReader reader;
 		FileInputStream fileIS;
-		
-		int lineLength	= 0;
-		int index		= 0;
-		int vertices	= 0;
-		
-		int coordInd	= 0;
-		int textureInd	= 0;
-		int normalInd	= 0;
-		int indicesInd	= 0;
-		
-		float vertX		= 0f;
-		float vertY		= 0f;
-		float vertZ		= 0f;
-		
-		float tempX		= 0f;
-		float tempY		= 0f;
-		float tempZ		= 0f;
-		
-		short ind1		= 0;
-		short ind2		= 0;
-		short ind3		= 0;
-		
-		final int FILETYPE	= 0;
-		final int LENGTHS	= 1;
-		final int VERTICES	= 2;
-		final int INDICES	= 3;
-		final int DONE		= 4;
-			  int type		= FILETYPE;
 			  
 		centX = x;
 		centY = y;
 		centZ = z;
 		
+		File file;
+		
 		//build the default filename
 		sdcard = Environment.getExternalStorageDirectory();
-		File file = new File(sdcard, filename);
+		file = new File(sdcard, filename);
 		
 		try {
 			fileIS = new FileInputStream(file);
@@ -98,22 +63,103 @@ public class Model {
 		}
 		
 		//read the file
+		readFile(file);
+		
+		BuildBuffers();
+	}
+	
+	public void BuildBuffers() {
+		//allocate memory for the vertex buffer
+		//number of vertices * three coordinates per vertex * 4 bytes per float
+		ByteBuffer vbb = ByteBuffer.allocateDirect(numVertices*3*4);
+		vbb.order(ByteOrder.nativeOrder());
+		vertexBuffer = vbb.asFloatBuffer();
+		
+		//allocate memory for the index buffer
+		//number of indices * 2 bytes per short
+		ByteBuffer ibb = ByteBuffer.allocateDirect(numIndices*3*2);
+		ibb.order(ByteOrder.nativeOrder());
+		indexBuffer = ibb.asShortBuffer();
+
+		vertexBuffer.put(vertices);
+		indexBuffer.put(indices);
+		
+		vertexBuffer.position(0);
+		indexBuffer.position(0);
+	}
+	
+	public void draw(GL10 gl) {
+		//stuff
+		gl.glMatrixMode(GL10.GL_MODELVIEW);
+		gl.glTranslatef(centX, centY, -1*centZ);
+		gl.glRotatef(rotAngleX, 0f, 1f, 0f);
+		gl.glRotatef(rotAngleY, 1f, 0f, 0f);
+		gl.glVertexPointer(3, GL10.GL_FLOAT, 0, vertexBuffer);
+		gl.glColor4f(0.8f, 0.8f, 0.8f, 1.0f);
+//		gl.glColorPointer(4, GL10.GL_FLOAT, 0, colorBuffer);
+		gl.glDrawElements(GL10.GL_TRIANGLES, numIndices*3, GL10.GL_UNSIGNED_SHORT, indexBuffer);
+	}
+	
+	void readFile(File file) {
+		String line;
+		String value;
+		String remainder;
+		String firstTwo;
+		String block;		//substring of line
+		String texFileName;
+		
+		int lineLength	= 0;
+		int index		= 0;
+		
+		int vertInd	= 0;
+		int textureInd	= 0;
+		int normalInd	= 0;
+		int indicesInd	= 0;
+		
+		BufferedReader reader;
+		
+		//read the file
 		try {
+			//Create BufferedReader to determine the length of each array.
 			reader = new BufferedReader(new FileReader(file));
+			while((line = reader.readLine()) != null) {
+				firstTwo = line.substring(0, 2);
+				
+				
+				if(firstTwo.compareTo("v ") == 0) {
+					//increment vertices
+					numVertices++;
+				}else if(firstTwo.compareTo("vt") == 0) {
+					//increment texture
+					numTex++;
+				}else if(firstTwo.compareTo("vn") == 0) {
+					//increment normals
+					numNormals++;
+				}else if(firstTwo.compareTo("f ") == 0) {
+					//increment indices
+					numIndices++;
+				}else {
+					//ignore
+				}
+			}
+			reader.close();
 			
-			//TODO	read through file once and take down length of arrays
-			//		vertices = new float[numVertices * 3];
+			vertices = new float [numVertices * 3];
+			indices = new short [numIndices * 3];
+			normals = new float [numNormals * 3];
+			texture = new float [numTex * 3];
 			
+			reader = new BufferedReader(new FileReader(file));
 			while((line = reader.readLine()) != null) {
 				//number of characters in string
 				lineLength = line.length();
 				
 				//check the first two characters to determine what to do 
-				firstTwo = line.substring(0,1);
+				firstTwo = line.substring(0,2);
 				
-				if(firstTwo == "mt") {			//mtllib
+				if(firstTwo.compareTo("mt") == 0) {			//mtllib
 					//ignore
-				}else if(firstTwo == "v ") {	//vertices coordinates
+				}else if(firstTwo.compareTo("v ") == 0) {	//vertices coordinates
 					////get rid of prefix
 					index = line.indexOf(" ");
 					remainder = line.substring(index+1, lineLength);
@@ -123,10 +169,10 @@ public class Model {
 					//store x coordinate
 					index = line.indexOf(" ");
 					value = line.substring(0, index);
-					if(coordInd != 0) {
-						coordInd++;
+					if(vertInd != 0) {
+						vertInd++;
 					}
-					coords[coordInd] = Float.parseFloat(value);
+					vertices[vertInd] = Float.parseFloat(value);
 					remainder = line.substring(index+1, lineLength);
 					line = remainder;
 					lineLength = line.length();
@@ -134,14 +180,14 @@ public class Model {
 					//store y coordinate
 					index = line.indexOf(" ");
 					value = line.substring(0, index);
-					coordInd++;
-					coords[coordInd] = Float.parseFloat(value);
+					vertInd++;
+					vertices[vertInd] = Float.parseFloat(value);
 					
 					//store z coordinate
 					value = line.substring(index+1, lineLength);
-					coordInd++;
-					coords[coordInd] = Float.parseFloat(value);
-				}else if(firstTwo == "vt") {	//texture coordinates
+					vertInd++;
+					vertices[vertInd] = Float.parseFloat(value);
+				}else if(firstTwo.compareTo("vt") == 0) {	//texture coordinates
 					//get rid of prefix
 					index = line.indexOf(" ");
 					remainder = line.substring(index+1, lineLength);
@@ -160,7 +206,7 @@ public class Model {
 					value = line.substring(index+1, lineLength);
 					textureInd++;
 					texture[textureInd] = Float.parseFloat(value);
-				}else if(firstTwo == "vn") {	//vector normals
+				}else if(firstTwo.compareTo("vn") == 0) {	//vector normals
 					//get rid of prefix
 					index = line.indexOf(" ");
 					remainder = line.substring(index+1, lineLength);
@@ -188,14 +234,15 @@ public class Model {
 					value = line.substring(index+1, lineLength);
 					normalInd++;
 					normals[normalInd] = Float.parseFloat(value);
-				}else if(firstTwo == "us") {	//usemtl (filename of the texture to use)
+				}else if(firstTwo.compareTo("us") == 0) {	//usemtl (filename of the texture to use)
 					//get rid of prefix
 					index = line.indexOf(" ");
 					remainder = line.substring(index+1, lineLength);
 					texFileName = remainder;
-				}else if(firstTwo == "s ") {	//shading
+				}else if(firstTwo.compareTo("s ") == 0) {	//shading
 					//ignore
-				}else if(firstTwo == "f ") {	//face definitions  (vertex/texture-coordinate/normal)
+				}else if(firstTwo.compareTo("f ") == 0) {	//face definitions  (vertex/texture-coordinate/normal)
+					//format:		f 5/1/1 1/2/1 4/3/1
 					//get rid of prefix
 					index = line.indexOf(" ");
 					remainder = line.substring(index+1, lineLength);
@@ -204,160 +251,43 @@ public class Model {
 					
 					//store index 1
 					index = line.indexOf(" ");
-					value = line.substring(0, index);
+					block = line.substring(0, index);
+					remainder = line.substring(index+1, lineLength);
+					index = block.indexOf("/");
+					value = block.substring(0, index);
 					if(indicesInd != 0) {
 						indicesInd++;
 					}
-					indices[indicesInd] = Short.parseShort(value);
-					remainder = line.substring(index+1, lineLength);
+					indices[indicesInd] = (short) (Short.parseShort(value) - 1);
 					line = remainder;
 					lineLength = line.length();
 					
-					//TODO finish this shit...
+					//store index 2
+					index = line.indexOf(" ");
+					block = line.substring(0, index);
+					remainder = line.substring(index+1, lineLength);
+					index = block.indexOf("/");
+					value = block.substring(0, index);
+					indicesInd++;
+					indices[indicesInd] = (short) (Short.parseShort(value) - 1);
+					line = remainder;
+					lineLength = line.length();
+					
+					//store index 3
+					index = line.indexOf("/");
+					value = line.substring(0, index);
+					indicesInd++;
+					indices[indicesInd] = (short) (Short.parseShort(value) - 1);
 				}else {
 					//ignore
 				}
-				
-				/*
-				if(type == FILETYPE) {
-					//the first line should just list the program
-					//ignore that line
-					type = LENGTHS;
-				} else if(type == LENGTHS) {
-					//record the values for number of vertices and indices
-					lineLength = line.length();
-					
-					index = line.indexOf(" ");
-					value = line.substring(0, index);
-					numVertices = vertices = Integer.parseInt(value);
-					coords = new float[numVertices * 3];
-					colors = new float[numVertices * 4];
-					
-					remainder = line.substring(index+1,lineLength);
-					index = remainder.indexOf(" ");
-					value = remainder.substring(0, index);
-					numTriangles = indices = Integer.parseInt(value);
-					triangles = new short[numTriangles * 3];
-					
-					type = VERTICES;
-				} else if(type == VERTICES) {
-					//store vertices values
-					lineLength = line.length();
-					
-					index = line.indexOf(" ");
-					vertX = Float.parseFloat( line.substring(0, index) );
-					remainder = line.substring(index+1, lineLength);
-					
-					line = remainder;
-					lineLength = line.length();
-					index = line.indexOf(" ");
-					vertY = Float.parseFloat( line.substring(0, index) );
-					remainder = line.substring(index+1, lineLength);
-
-					line = remainder;
-					vertZ = Float.parseFloat( line );
-					
-					coords[numVertices*3 - vertices*3] = vertX;
-					coords[numVertices*3 - vertices*3 + 1] = vertY;
-					coords[numVertices*3 - vertices*3 + 2] = vertZ;
-					
-					if(vertices == 1) {
-						type = INDICES;
-					}
-					
-					vertices -= 1;
-				} else if(type == INDICES)	{
-					//store indices values
-					lineLength = line.length();
-					
-					//ignore first value
-					index = line.indexOf(" ");
-					remainder = line.substring(index+1, lineLength);
-					
-					line = remainder;
-					lineLength = line.length();
-					index = remainder.indexOf(" ");
-					remainder = line.substring(index+1, lineLength);
-					ind1 = Short.parseShort( line.substring(0, index) );
-					
-					line = remainder;
-					lineLength = line.length();
-					index = line.indexOf(" ");
-					remainder = line.substring(index+1, lineLength);
-					ind2 = Short.parseShort( line.substring(0, index) );
-					ind3 = Short.parseShort( line.substring(index+1, lineLength) );
-					
-					triangles[numTriangles*3 - indices*3] = ind1;
-					triangles[numTriangles*3 - indices*3 + 1] = ind2;
-					triangles[numTriangles*3 - indices*3 + 2] = ind3;
-					
-					if(indices == 1) {
-						type = DONE;
-					}
-					
-					indices -= 1;
-				}*/
 			}
+			reader.close();
 		}
 		catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 		}
-		
-//		Arrays.fill(colors, 0.8f);
-		
-//		//color the model
-//		for(int a = 0; a < colors.length; a++) {
-//			if(a%4 == 0) {
-//				colors[a] = 1.0f;
-//			}
-//		};
-		
-		BuildBuffers();
-	}
-	
-	public void BuildBuffers() {
-		//allocate memory for the vertex buffer
-		//number of vertices * three coordinates per vertex * 4 bytes per float
-		ByteBuffer vbb = ByteBuffer.allocateDirect(numVertices*3*4);
-		vbb.order(ByteOrder.nativeOrder());
-		vertexBuffer = vbb.asFloatBuffer();
-		
-		//allocate memory for the index buffer
-		//number of indices * 2 bytes per short
-		ByteBuffer fbb = ByteBuffer.allocateDirect(numTriangles*3*2);
-		fbb.order(ByteOrder.nativeOrder());
-		triBuffer = fbb.asShortBuffer();
-		
-		//allocate memory for the index buffer
-		//number of vertices * 4 bytes per float
-	    ByteBuffer cbb = ByteBuffer.allocateDirect(numVertices*4*4);
-	    cbb.order(ByteOrder.nativeOrder());
-	    colorBuffer = cbb.asFloatBuffer();
-	    
-	    ByteBuffer tbb = ByteBuffer.allocateDirect(numTex*4);
-	    tbb.order(ByteOrder.nativeOrder());
-	    texBuffer = tbb.asFloatBuffer();
-
-		vertexBuffer.put(coords);
-		triBuffer.put(triangles);
-		colorBuffer.put(colors);
-		
-		vertexBuffer.position(0);
-		triBuffer.position(0);
-		colorBuffer.position(0);
-	}
-	
-	public void draw(GL10 gl) {
-		//stuff
-		gl.glMatrixMode(GL10.GL_MODELVIEW);
-		gl.glTranslatef(0f, 0f, -10f);
-		gl.glRotatef(rotAngleX, 0f, 1f, 0f);
-		gl.glRotatef(rotAngleY, 1f, 0f, 0f);
-		gl.glVertexPointer(3, GL10.GL_FLOAT, 0, vertexBuffer);
-		gl.glColor4f(0.8f, 0.8f, 0.8f, 1.0f);
-//		gl.glColorPointer(4, GL10.GL_FLOAT, 0, colorBuffer);
-		gl.glDrawElements(GL10.GL_TRIANGLES, numTriangles*3, GL10.GL_UNSIGNED_SHORT, triBuffer);
 	}
 	
 

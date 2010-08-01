@@ -87,7 +87,7 @@ public class ModelView extends GLSurfaceView implements Renderer{
 		
 		//instance the background and model
 		bg = new Background();
-		model = new Model(0f,0f, -floorZ);
+		model = new Model(0f, 0f, floorZ);
 		
 		//Log Message
 		Log.i(TAG, "Constructor finished");
@@ -112,7 +112,9 @@ public class ModelView extends GLSurfaceView implements Renderer{
 //		gl.glCullFace(GL10.GL_BACK);
 		
 		//gl settings
-		gl.glEnableClientState(GL10.GL_COLOR_ARRAY);
+		//##BF
+		//gl.glEnableClientState(GL10.GL_COLOR_ARRAY);
+		//##
 //		gl.glEnable(GL10.GL_COLOR_MATERIAL);
 //		gl.glEnable(GL10.GL_DITHER);
 //		gl.glEnable(GL10.GL_TEXTURE_2D);
@@ -132,12 +134,13 @@ public class ModelView extends GLSurfaceView implements Renderer{
 		gl.glClear(GL10.GL_COLOR_BUFFER_BIT | GL10.GL_DEPTH_BUFFER_BIT);
 		gl.glLoadIdentity();
 		
-		gl.glEnable(GL10.GL_LIGHTING);
-//		gl.glDisable(GL10.GL_LIGHTING);
+//		gl.glEnable(GL10.GL_LIGHTING);
+		gl.glDisable(GL10.GL_LIGHTING);
 		
 		//Draw the background
 		bg.updateSize(farW, farH, -1*(20-1));
-		bg.draw(gl);
+//		bg.draw(gl);
+//		gl.glColor4f(0.8f, 0.8f, 1f, 1f);
 		model.draw(gl);
 	}
 
