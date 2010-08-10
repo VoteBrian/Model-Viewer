@@ -95,6 +95,8 @@ public class ModelView extends GLSurfaceView implements Renderer{
 
 	//Surface Created
 	public void onSurfaceCreated(GL10 gl, EGLConfig config) {
+		model.loadTexture(gl, context);
+		
 		//set up lighting
 		gl.glLightfv(GL10.GL_LIGHT0, GL10.GL_AMBIENT, lightAmbientBuffer);		//Setup The Ambient Light ( NEW )
 		gl.glLightfv(GL10.GL_LIGHT0, GL10.GL_DIFFUSE, lightDiffuseBuffer);		//Setup The Diffuse Light ( NEW )

@@ -6,17 +6,26 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 import java.nio.ShortBuffer;
 
 import javax.microedition.khronos.opengles.GL10;
+import javax.microedition.khronos.opengles.GL11;
 
+import android.content.Context;
+import android.content.res.AssetManager;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.opengl.GLUtils;
 import android.os.Environment;
 
 public class Model {
 	String filename = "models/tile.obj";
+	String texFileName;
+	
 	File sdcard;
 	FloatBuffer	vertexBuffer;
 	FloatBuffer	colorBuffer;
@@ -41,6 +50,8 @@ public class Model {
 	
 	short[] indices;
 	int numIndices = 0;
+	
+	private int[] tex = new int[3];
 	
 	public Model(float x, float y, float z) {
 		FileInputStream fileIS;
@@ -106,7 +117,6 @@ public class Model {
 		String remainder;
 		String firstTwo;
 		String block;		//substring of line
-		String texFileName;
 		
 		int lineLength	= 0;
 		int index		= 0;
@@ -298,5 +308,30 @@ public class Model {
 	
 	public void setAngleY(float angle) {
 		rotAngleY += angle;
+	}
+	
+	public void loadTexture(GL10 gl, Context context) {
+		sdcard = Environment.getExternalStorageDirectory();
+		
+		File modelsDir = new File(sdcard, "models/tile_tex.png");
+		
+		String temp = "/mnt/sdcard/models/tile_tex.png";
+		
+		Bitmap bitmap = BitmapFactory.decodeFile(temp);
+		if(bitmap == null ) {
+			//TODO some error handling goes here
+		}
+		int[] textures = new int[3];
+		gl.glGenTextures(3, textures, 0);
+		int textureID = textures[0];
+		gl.glBindTexture(GL10.GL_TEXTURE_2D, textureID);
+
+        // no mipmaps
+        gl.glTexParameterf(GL10.GL_TEXTURE_2D, GL10.GL_TEXTURE_MAG_FILTER, GL10.GL_LINEAR);
+        gl.glTexParameterf(GL10.GL_TEXTURE_2D, GL10.GL_TEXTURE_MIN_FILTER, GL10.GL_LINEAR);
+
+        GLUtils.texImage2D(GL10.GL_TEXTURE_2D, 0, bitmap, 0);
+		
+        bitmap.recycle();
 	}
 }

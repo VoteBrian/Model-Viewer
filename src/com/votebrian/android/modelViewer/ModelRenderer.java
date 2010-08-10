@@ -71,7 +71,7 @@ public class ModelRenderer implements GLSurfaceView.Renderer {
 	}
 
 	public void onDrawFrame(GL10 gl) {
-		Bitmap bmp = BitmapFactory.decodeResource(context.getResources(), R.drawable.tiletex);
+		Bitmap bmp = BitmapFactory.decodeResource(context.getResources(), R.drawable.tile_tex);
 		ByteBuffer bb = ByteBuffer.allocateDirect(bmp.getHeight() * bmp.getWidth() * 4); 
 		
 		//clear the color buffer to show the Clear Color
