@@ -24,6 +24,9 @@ public class ModelView extends GLSurfaceView implements Renderer{
 	Context context;
 	
 	Model			model;
+	Model			model2;
+	Model			model3;
+	Model			model4;
 	Background		bg;
 
 			float	viewW		= 0f;
@@ -86,8 +89,11 @@ public class ModelView extends GLSurfaceView implements Renderer{
 		lightPositionBuffer2.position(0);
 		
 		//instance the background and model
-		bg = new Background();
+		//bg = new Background();
 		model = new Model(0f, 0f, floorZ);
+		model2 = new Model(0.1f, 0.1f, floorZ);
+		model3 = new Model(-0.2f, 0f, floorZ);
+		model4 = new Model(0f, 0.1f, floorZ);
 		
 		//Log Message
 		Log.i(TAG, "Constructor finished");
@@ -121,13 +127,17 @@ public class ModelView extends GLSurfaceView implements Renderer{
 //		gl.glEnable(GL10.GL_DITHER);
 //		gl.glEnable(GL10.GL_TEXTURE_2D);
 		gl.glShadeModel(GL10.GL_SMOOTH);
-		gl.glClearColor(1.0f, 0.8f, 0.8f, 1.0f);
+		gl.glClearColor(0.8f, 0.8f, 1.0f, 1.0f);
 		gl.glClearDepthf(1.0f);
 		gl.glEnable(GL10.GL_DEPTH_TEST);
+		gl.glDisable(GL10.GL_COLOR_MATERIAL);
 		gl.glDepthFunc(GL10.GL_LEQUAL);
 
 		//load texture
-		//model.loadTexture(gl, this.context);
+		model.loadTexture(gl, this.context);
+		model2.loadTexture(gl, this.context);
+		model3.loadTexture(gl, this.context);
+		model4.loadTexture(gl, this.context);
 		gl.glHint(GL10.GL_PERSPECTIVE_CORRECTION_HINT, GL10.GL_NICEST);
 	}
 
@@ -136,14 +146,17 @@ public class ModelView extends GLSurfaceView implements Renderer{
 		gl.glClear(GL10.GL_COLOR_BUFFER_BIT | GL10.GL_DEPTH_BUFFER_BIT);
 		gl.glLoadIdentity();
 		
-//		gl.glEnable(GL10.GL_LIGHTING);
-		gl.glDisable(GL10.GL_LIGHTING);
+		gl.glEnable(GL10.GL_LIGHTING);
+//		gl.glDisable(GL10.GL_LIGHTING);
 		
 		//Draw the background
-		bg.updateSize(farW, farH, -1*(20-1));
+		//bg.updateSize(farW, farH, -1*(20-1));
 //		bg.draw(gl);
 //		gl.glColor4f(0.8f, 0.8f, 1f, 1f);
 		model.draw(gl);
+		model2.draw(gl);
+		model3.draw(gl);
+		model4.draw(gl);
 	}
 
 	public void onSurfaceChanged(GL10 gl, int w, int h) {
@@ -151,7 +164,7 @@ public class ModelView extends GLSurfaceView implements Renderer{
 		viewH = h;
 		
 		projSettings(gl);
-		bg.updateSize(farW, farH, -1*(farZ-1));
+		//bg.updateSize(farW, farH, -1*(farZ-1));
 	}
 	
 	/*

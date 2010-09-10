@@ -23,15 +23,57 @@ import android.opengl.GLUtils;
 import android.os.Environment;
 
 public class Model {
+	
+	/* ********************
+	   Global Variables
+	******************** */
 	String filename = "models/tile.obj";
 	String texFileName;
 	
-	File sdcard;
-	FloatBuffer	vertexBuffer;
-	FloatBuffer	colorBuffer;
-	FloatBuffer	texBuffer;
-	ShortBuffer	indexBuffer;
+	//Store the sdcard path
+	File sdcard_path;
 	
+	//Triangles
+	FloatBuffer	trianglesBuffer;
+	float[] triangles;
+	int numTriangles = 0;
+	
+	float[] vertices;
+	int numVertices = 0;
+	
+	short[] vertIndices;
+	int numVertIndices = 0;
+	
+	//Texture
+	FloatBuffer	texBuffer;
+	float[] texture;
+	float[] finalTexture;
+	int numTex = 0;
+	
+	//Texture Indices
+	ShortBuffer texIndexBuffer;
+	short[] texIndices;
+	int numTexIndices = 0;
+	
+	//Normals
+	FloatBuffer normalBuffer;
+	float[] normals;
+	float[] finalNorm;
+	int numNormals = 0;
+	
+	//Normal Indices
+	ShortBuffer normIndexBuffer;
+	short[] normIndices;
+	int numNormIndices = 0;
+	
+	//Colors
+	//This buffer will replace the texture buffer in the event that the obj file does
+	//not specify a texture or if the texture image cannot be loaded.
+	FloatBuffer	colorBuffer;
+	float[] colors;
+	int numColors = 0;
+	
+	//Center coordinates of the model
 	float centX;
 	float centY;
 	float centZ;
@@ -39,19 +81,8 @@ public class Model {
 	float rotAngleX;
 	float rotAngleY;
 	
-	float[] vertices;
-	int numVertices = 0;
-	
-	float[] texture;
-	int numTex = 0;
-	
-	float[] normals;
-	int numNormals = 0;
-	
-	short[] indices;
-	int numIndices = 0;
-	
-	private int[] tex = new int[3];
+	//TODO should this go with the texture variables above or is this separate?
+	private int[] textures = new int[3];
 	
 	public Model(float x, float y, float z) {
 		FileInputStream fileIS;
@@ -63,13 +94,13 @@ public class Model {
 		File file;
 		
 		//build the default filename
-		sdcard = Environment.getExternalStorageDirectory();
-		file = new File(sdcard, filename);
+		sdcard_path = Environment.getExternalStorageDirectory();
+		file = new File(sdcard_path, filename);
 		
 		try {
 			fileIS = new FileInputStream(file);
 		} catch (FileNotFoundException e1) {
-			// TODO Auto-generated catch block
+			//TODO Auto-generated catch block
 			e1.printStackTrace();
 		}
 		
@@ -80,35 +111,142 @@ public class Model {
 	}
 	
 	public void BuildBuffers() {
-		//allocate memory for the vertex buffer
-		//number of vertices * three coordinates per vertex * 4 bytes per float
-		ByteBuffer vbb = ByteBuffer.allocateDirect(numVertices*3*4);
+		int ind;
+		
+		triangles = new float [numVertIndices * 3 * 3];
+		finalNorm = new float [numVertIndices * 3 * 3];
+		finalTexture = new float [numVertIndices * 3 * 3];
+		
+		for(ind = 0; ind < numVertIndices * 3; ind++) {
+			triangles[ind*3] = vertices[vertIndices[ind]*3];
+			triangles[ind*3+1] = vertices[vertIndices[ind]*3+1];
+			triangles[ind*3+2] = vertices[vertIndices[ind]*3+2];
+			
+			finalNorm[ind*3] = normals[normIndices[ind]*3];
+			finalNorm[ind*3+1] = normals[normIndices[ind]*3+1];
+			finalNorm[ind*3+2] = normals[normIndices[ind]*3+2];
+			
+			finalTexture[ind*3] = texture[texIndices[ind]*3];
+			finalTexture[ind*3+1] = texture[texIndices[ind]*3+1];
+			finalTexture[ind*3+2] = texture[texIndices[ind]*3+2];
+		}
+		numTriangles = triangles.length;
+		
+		//Vertex Buffer
+		ByteBuffer vbb = ByteBuffer.allocateDirect(numTriangles*3*4);
 		vbb.order(ByteOrder.nativeOrder());
-		vertexBuffer = vbb.asFloatBuffer();
+		trianglesBuffer = vbb.asFloatBuffer();
+		trianglesBuffer.put(triangles);
+		trianglesBuffer.position(0);
 		
-		//allocate memory for the index buffer
-		//number of indices * 2 bytes per short
-		ByteBuffer ibb = ByteBuffer.allocateDirect(numIndices*3*2);
+		//Vertex Indices Buffer
+		/*ByteBuffer ibb = ByteBuffer.allocateDirect(numVertIndices*3*2);
 		ibb.order(ByteOrder.nativeOrder());
-		indexBuffer = ibb.asShortBuffer();
-
-		vertexBuffer.put(vertices);
-		indexBuffer.put(indices);
+		vertIndexBuffer = ibb.asShortBuffer();
+		vertIndexBuffer.put(vertIndices);
+		vertIndexBuffer.position(0);
+		*/
 		
-		vertexBuffer.position(0);
-		indexBuffer.position(0);
+		//Texture Buffer
+		ByteBuffer tbb = ByteBuffer.allocateDirect(numTriangles*3*4);
+		tbb.order(ByteOrder.nativeOrder());
+		texBuffer = tbb.asFloatBuffer();
+		texBuffer.put(finalTexture);
+		texBuffer.position(0);
+		
+		//Normal Buffer
+		ByteBuffer nbb = ByteBuffer.allocateDirect(numTriangles*3*4);
+		nbb.order(ByteOrder.nativeOrder());
+		normalBuffer = nbb.asFloatBuffer();
+		normalBuffer.put(finalNorm);
+		normalBuffer.position(0);
+		
+		//TODO Color Buffer
+		//if necessary
 	}
 	
 	public void draw(GL10 gl) {
 		//stuff
-		gl.glMatrixMode(GL10.GL_MODELVIEW);
+		gl.glEnable(GL10.GL_TEXTURE_2D);
+		gl.glBindTexture(GL10.GL_TEXTURE_2D, textures[0]);
+		
+		gl.glEnableClientState(GL10.GL_VERTEX_ARRAY);
+		gl.glEnableClientState(GL10.GL_TEXTURE_COORD_ARRAY);
+		gl.glEnableClientState(GL10.GL_NORMAL_ARRAY);
+		
+		gl.glFrontFace(GL10.GL_CCW);
+		
+		//Point to our buffers
+		gl.glVertexPointer(3, GL10.GL_FLOAT, 0, trianglesBuffer);
+		gl.glTexCoordPointer(2, GL10.GL_FLOAT, 0, texBuffer);
+		gl.glNormalPointer(GL10.GL_FLOAT, 0, normalBuffer);
+		
+		
+		//gl.glMatrixMode(GL10.GL_MODELVIEW);
 		gl.glTranslatef(centX, centY, -1*centZ);
 		gl.glRotatef(rotAngleX, 0f, 1f, 0f);
-		gl.glRotatef(rotAngleY, 1f, 0f, 0f);
-		gl.glVertexPointer(3, GL10.GL_FLOAT, 0, vertexBuffer);
-		gl.glColor4f(0.8f, 0.8f, 0.8f, 1.0f);
-//		gl.glColorPointer(4, GL10.GL_FLOAT, 0, colorBuffer);
-		gl.glDrawElements(GL10.GL_TRIANGLES, numIndices*3, GL10.GL_UNSIGNED_SHORT, indexBuffer);
+		gl.glRotatef(rotAngleY, 1f, 0f, 0f);	
+		
+		gl.glDrawArrays(GL10.GL_TRIANGLES, 0, numTriangles);
+		
+		//Disable the client state before leaving
+		gl.glDisableClientState(GL10.GL_VERTEX_ARRAY);
+		gl.glDisableClientState(GL10.GL_TEXTURE_COORD_ARRAY);
+		gl.glDisableClientState(GL10.GL_NORMAL_ARRAY);
+	}
+	
+	public void setAngleX(float angle) {
+		rotAngleX += angle;
+	}
+	
+	public void setAngleY(float angle) {
+		rotAngleY += angle;
+	}
+	
+	public void loadTexture(GL10 gl, Context context) {
+		InputStream is = context.getResources().openRawResource(R.drawable.tex);
+		Bitmap bitmap = null;
+		
+		try{
+			bitmap = BitmapFactory.decodeStream(is);
+		} finally {
+			try {
+				is.close();
+				is = null;
+			} catch(IOException e) {
+				is = null;
+			}
+		}
+		
+		gl.glGenTextures(3, textures, 0);
+		
+		//Generate there texture pointer
+		//gl.glGenTextures(3, textures, 0);
+
+		//Create Nearest Filtered Texture and bind it to texture 0
+		gl.glBindTexture(GL10.GL_TEXTURE_2D, textures[0]);
+		gl.glTexParameterf(GL10.GL_TEXTURE_2D, GL10.GL_TEXTURE_MAG_FILTER, GL10.GL_NEAREST);
+		gl.glTexParameterf(GL10.GL_TEXTURE_2D, GL10.GL_TEXTURE_MIN_FILTER, GL10.GL_NEAREST);
+		GLUtils.texImage2D(GL10.GL_TEXTURE_2D, 0, bitmap, 0);
+
+		//Create Linear Filtered Texture and bind it to texture 1
+		gl.glBindTexture(GL10.GL_TEXTURE_2D, textures[1]);
+		gl.glTexParameterf(GL10.GL_TEXTURE_2D, GL10.GL_TEXTURE_MAG_FILTER, GL10.GL_LINEAR);
+		gl.glTexParameterf(GL10.GL_TEXTURE_2D, GL10.GL_TEXTURE_MIN_FILTER, GL10.GL_LINEAR);
+		GLUtils.texImage2D(GL10.GL_TEXTURE_2D, 0, bitmap, 0);
+
+		/*
+		//Create mipmapped textures and bind it to texture 2
+		gl.glBindTexture(GL10.GL_TEXTURE_2D, textures[2]);
+		gl.glTexParameterf(GL10.GL_TEXTURE_2D, GL10.GL_TEXTURE_MAG_FILTER, GL10.GL_LINEAR);
+		gl.glTexParameterf(GL10.GL_TEXTURE_2D, GL10.GL_TEXTURE_MIN_FILTER, GL10.GL_LINEAR_MIPMAP_NEAREST);
+		
+		
+		gl.glTexParameterf(GL11.GL_TEXTURE_2D, GL11.GL_GENERATE_MIPMAP, GL11.GL_TRUE);
+		GLUtils.texImage2D(GL10.GL_TEXTURE_2D, 0, bitmap, 0);
+		*/
+		
+		bitmap.recycle();
 	}
 	
 	void readFile(File file) {
@@ -147,7 +285,7 @@ public class Model {
 					numNormals++;
 				}else if(firstTwo.compareTo("f ") == 0) {
 					//increment indices
-					numIndices++;
+					numVertIndices++;
 				}else {
 					//ignore
 				}
@@ -155,9 +293,11 @@ public class Model {
 			reader.close();
 			
 			vertices = new float [numVertices * 3];
-			indices = new short [numIndices * 3];
+			vertIndices = new short [numVertIndices * 3];
 			normals = new float [numNormals * 3];
+			normIndices = new short [numVertIndices * 3];
 			texture = new float [numTex * 3];
+			texIndices = new short [numVertIndices *3];
 			
 			reader = new BufferedReader(new FileReader(file));
 			while((line = reader.readLine()) != null) {
@@ -259,35 +399,82 @@ public class Model {
 					line = remainder;
 					lineLength = line.length();
 					
-					//store index 1
-					index = line.indexOf(" ");
-					block = line.substring(0, index);
+					//store first vertex index
+					index = line.indexOf("/");
+					value = line.substring(0, index);
 					remainder = line.substring(index+1, lineLength);
-					index = block.indexOf("/");
-					value = block.substring(0, index);
 					if(indicesInd != 0) {
 						indicesInd++;
 					}
-					indices[indicesInd] = (short) (Short.parseShort(value) - 1);
+					vertIndices[indicesInd] = (short) (Short.parseShort(value) - 1);
 					line = remainder;
 					lineLength = line.length();
 					
-					//store index 2
-					index = line.indexOf(" ");
-					block = line.substring(0, index);
-					remainder = line.substring(index+1, lineLength);
-					index = block.indexOf("/");
-					value = block.substring(0, index);
-					indicesInd++;
-					indices[indicesInd] = (short) (Short.parseShort(value) - 1);
-					line = remainder;
-					lineLength = line.length();
-					
-					//store index 3
+					//store first texture index
 					index = line.indexOf("/");
 					value = line.substring(0, index);
+					remainder = line.substring(index+1, lineLength);
+					texIndices[indicesInd] = (short) (Short.parseShort(value) - 1);
+					line = remainder;
+					lineLength = line.length();
+					
+					//store first normal index
+					index = line.indexOf(" ");
+					value = line.substring(0, index);
+					remainder = line.substring(index+1, lineLength);
+					normIndices[indicesInd] = (short) (Short.parseShort(value) - 1);
+					line = remainder;
+					lineLength = line.length();
+					
+					
+					//store second vertex index
+					index = line.indexOf("/");
+					value = line.substring(0, index);
+					remainder = line.substring(index+1, lineLength);
 					indicesInd++;
-					indices[indicesInd] = (short) (Short.parseShort(value) - 1);
+					vertIndices[indicesInd] = (short) (Short.parseShort(value) - 1);
+					line = remainder;
+					lineLength = line.length();
+					
+					//store second texture index
+					index = line.indexOf("/");
+					value = line.substring(0, index);
+					remainder = line.substring(index+1, lineLength);
+					texIndices[indicesInd] = (short) (Short.parseShort(value) - 1);
+					line = remainder;
+					lineLength = line.length();
+					
+					//store second normal index
+					index = line.indexOf(" ");
+					value = line.substring(0, index);
+					remainder = line.substring(index+1, lineLength);
+					normIndices[indicesInd] = (short) (Short.parseShort(value) - 1);
+					line = remainder;
+					lineLength = line.length();
+					
+					
+					//store second vertex index
+					index = line.indexOf("/");
+					value = line.substring(0, index);
+					remainder = line.substring(index+1, lineLength);
+					indicesInd++;
+					vertIndices[indicesInd] = (short) (Short.parseShort(value) - 1);
+					line = remainder;
+					lineLength = line.length();
+					
+					//store second texture index
+					index = line.indexOf("/");
+					value = line.substring(0, index);
+					remainder = line.substring(index+1, lineLength);
+					texIndices[indicesInd] = (short) (Short.parseShort(value) - 1);
+					line = remainder;
+					lineLength = line.length();
+					
+					//store second normal index
+					value = line;
+					normIndices[indicesInd] = (short) (Short.parseShort(value) - 1);
+					line = remainder;
+					lineLength = line.length();
 				}else {
 					//ignore
 				}
@@ -298,40 +485,5 @@ public class Model {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 		}
-	}
-	
-
-	
-	public void setAngleX(float angle) {
-		rotAngleX += angle;
-	}
-	
-	public void setAngleY(float angle) {
-		rotAngleY += angle;
-	}
-	
-	public void loadTexture(GL10 gl, Context context) {
-		sdcard = Environment.getExternalStorageDirectory();
-		
-		File modelsDir = new File(sdcard, "models/tile_tex.png");
-		
-		String temp = "/mnt/sdcard/models/tile_tex.png";
-		
-		Bitmap bitmap = BitmapFactory.decodeFile(temp);
-		if(bitmap == null ) {
-			//TODO some error handling goes here
-		}
-		int[] textures = new int[3];
-		gl.glGenTextures(3, textures, 0);
-		int textureID = textures[0];
-		gl.glBindTexture(GL10.GL_TEXTURE_2D, textureID);
-
-        // no mipmaps
-        gl.glTexParameterf(GL10.GL_TEXTURE_2D, GL10.GL_TEXTURE_MAG_FILTER, GL10.GL_LINEAR);
-        gl.glTexParameterf(GL10.GL_TEXTURE_2D, GL10.GL_TEXTURE_MIN_FILTER, GL10.GL_LINEAR);
-
-        GLUtils.texImage2D(GL10.GL_TEXTURE_2D, 0, bitmap, 0);
-		
-        bitmap.recycle();
 	}
 }
